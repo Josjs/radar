@@ -2,5 +2,5 @@
 
 import numpy as np
 
-print("Hei, sveis. {%.d}".format())
+print("Hei, sveis. {}".format(np.pi))
 
