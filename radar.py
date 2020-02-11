@@ -13,8 +13,6 @@ Rmax = 25 # searching in a range of 25 m/s
 MTI = 0   # MTI mode disable (irrelevant for this application)
 Mth = 4   # most sensitive threshold
 
-print("Hei, sveis. {}".format(np.pi))
-
 uRAD.loadConfiguration(mode, f0, BW, Ns, Ntar, Rmax, MTI, Mth)
 
 uRAD.turnON()
