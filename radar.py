@@ -55,6 +55,7 @@ def datappend(sample, path):
 def datawrite(path):
     with open(path, 'w') as file:
         #do nothing
+        file.write("")
         
 ##############################################################################
 
