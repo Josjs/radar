@@ -4,6 +4,7 @@ import numpy as np
 import uRAD
 import argparse
 import datetime
+import send
 
 parser = argparse.ArgumentParser()
 parser.add_argument("points", type=int, default = 0,
@@ -18,7 +19,7 @@ args = parser.parse_args()
 
 # Radar input parameters
 mode = 1   # 1 = doppler mode
-f0   = 100  # starting at 24.1 GHz
+f0   = 100 # starting at 24.1 GHz
 BW   = 240 # using all the BW available = 240 MHz
 Ns   = 200 # 200 samples
 Ntar = 1   # only one target of interest
@@ -52,6 +53,7 @@ def datappend(sample, path):
     with open(path, 'a') as file:
         file.write(csv_string)
 
+#Create a file, so we can append to it later
 def datawrite(path):
     with open(path, 'w') as file:
         #do nothing
@@ -71,6 +73,7 @@ while (i < ndata or not ndata):
     uRAD.detection(0, velocity, snr, iarr, qarr, movement)
     if movement[0]==True:
         print("velocity: {: 6.2f}, snr: {: 6.2f}".format(velocity[0], snr[0]))
+        send.send(2,np.mean(velocity),20,35)
     else:
         print(i)
     datappend(iarr, outdir + out_i)
