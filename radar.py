@@ -1,17 +1,28 @@
 #!/usr/bin/python3
 
-import numpy as np
-import uRAD
 import argparse
+import cam
 import datetime
+import numpy as np
 import send
+import threading
+import uRAD
 
 parser = argparse.ArgumentParser()
 parser.add_argument("points", type=int, default = 0, nargs="?",
-                    help = "number of datapoints to take")
+                    help = "number of datapoints to take"
+                    )
 parser.add_argument("-s", "--send", action="store_true")
+parser.add_argument("-d", "--duration", nargs=1, help = 
+                    "capture DURATION s of video on target detection"
+                    )
 args = parser.parse_args()
 
+# camthread = 0
+if args.duration:
+    global camthread
+    camthread = threading.Thread()
+ 
 # uRAD.detection takes an array for each measurement it provides.
 # The format is:
 # uRAD.detection(distance, velocity, SNR, I, Q, movement)
@@ -19,22 +30,22 @@ args = parser.parse_args()
 # See the documentation for the correct lengths of these arrays
 
 # Radar input parameters
-mode = 1   # 1 = doppler mode
-f0   = 100 # starting at 24.1 GHz
-BW   = 240 # using all the BW available = 240 MHz
+BW   = 240 # using all the BW available = 240 MHz (irrelevant)
+MTI  = 0   # MTI mode disable (irrelevant for this application)
+Mth  = 1   # sensitivity threshold
 Ns   = 200 # 200 samples
 Ntar = 1   # only one target of interest
 Rmax = 25  # searching in a range of 25 m/s
-MTI  = 0   # MTI mode disable (irrelevant for this application)
-Mth  = 1   # sensitivity threshold
+f0   = 100 # starting at 24.1 GHz
+mode = 1   # 1 = doppler mode
 
 # Data output arrays
 distance        = [0] * Ntar
 velocity        = [0] * Ntar
 snr             = [0] * Ntar
-movement        = [0]
 iarr            = [0] * Ns
 qarr            = [0] * Ns
+movement        = [0]
 
 # Output directory
 outdir = "./output/"
@@ -54,11 +65,22 @@ def datappend(sample, path):
     with open(path, 'a') as file:
         file.write(csv_string)
 
-#Create a file, so we can append to it later
+# Create a file, so we can append to it later
 def datawrite(path):
     with open(path, 'w') as file:
         #do nothing
         file.write("")
+
+# Check if video capture thread is alive, or start a new
+def videocapture(duration, mode = 0):
+    global camthread
+    if not camthread.isAlive():
+        now = datetime.datetime.now().isoformat()
+        path = outdir + "{}.h264".format(now)
+        camthread = threading.Thread(target = cam.video,
+                                    args = (path, duration, mode)
+                                    )
+        camthread.start()
         
 ##############################################################################
 
@@ -69,6 +91,7 @@ uRAD.turnON()
 datawrite(outdir + out_i)
 datawrite(outdir + out_q)
 
+   
 i = 0
 while (i < ndata or not ndata):
     uRAD.detection(0, velocity, snr, iarr, qarr, movement)
@@ -76,6 +99,8 @@ while (i < ndata or not ndata):
         print("velocity: {: 6.2f}, snr: {: 6.2f}".format(velocity[0], snr[0]))
         if args.send:
             send.send(2,np.mean(velocity),20,35)
+        if args.duration:
+            videocapture(args.duration, 1)
     else:
         print(i)
     datappend(iarr, outdir + out_i)
@@ -83,3 +108,5 @@ while (i < ndata or not ndata):
     i += 1
 
 uRAD.turnOFF()
+
+
