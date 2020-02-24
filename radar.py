@@ -74,13 +74,19 @@ def datawrite(path):
 # Check if video capture thread is alive, or start a new
 def videocapture(duration, mode = 0):
     global camthread
-    if not camthread.isAlive():
+    if camthread.isAlive():
+        camthread.join(timeout = 0)
+        print("is alive")
+    else:
+        print("is ded")
         now = datetime.datetime.now().isoformat()
         path = outdir + "{}.h264".format(now)
         camthread = threading.Thread(target = cam.video,
                                     args = (path, duration, mode)
                                     )
         camthread.start()
+        # camthread.run()
+        camthread.join(timeout = 0)
         
 ##############################################################################
 
@@ -90,7 +96,6 @@ uRAD.turnON()
 
 datawrite(outdir + out_i)
 datawrite(outdir + out_q)
-
    
 i = 0
 while (i < ndata or not ndata):
