@@ -11,7 +11,8 @@ import uRAD
 parser = argparse.ArgumentParser()
 parser.add_argument("points", type=int, default = 0, nargs="?",
                     help = "number of datapoints to take")
-parser.add_argument("-s", "--send", action="store_true")
+parser.add_argument("-s", "--send", action="store_true",
+                    help = "send data to server")
 parser.add_argument("-d", "--duration", nargs=1, help = 
                     "capture DURATION s of video on target detection")
 args = parser.parse_args()

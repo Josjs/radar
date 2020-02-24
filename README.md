@@ -14,6 +14,8 @@
     show this help message and exit
 
   -s, --send
+
+    send data to server
   
   -d DURATION, --duration DURATION
   
