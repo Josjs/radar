@@ -7,8 +7,9 @@ import datetime
 import send
 
 parser = argparse.ArgumentParser()
-parser.add_argument("points", type=int, default = 0,
+parser.add_argument("points", type=int, default = 0, nargs="?",
                     help = "number of datapoints to take")
+parser.add_argument("-s", "--send", action="store_true")
 args = parser.parse_args()
 
 # uRAD.detection takes an array for each measurement it provides.
@@ -73,7 +74,8 @@ while (i < ndata or not ndata):
     uRAD.detection(0, velocity, snr, iarr, qarr, movement)
     if movement[0]==True:
         print("velocity: {: 6.2f}, snr: {: 6.2f}".format(velocity[0], snr[0]))
-        send.send(2,np.mean(velocity),20,35)
+        if args.send:
+            send.send(2,np.mean(velocity),20,35)
     else:
         print(i)
     datappend(iarr, outdir + out_i)
