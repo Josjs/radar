@@ -113,6 +113,8 @@ if __name__ == "__main__":
         datappend(iarr, outdir + out_i)
         datappend(qarr, outdir + out_q)
         i += 1
+        # Delay so we do not fry the CPU
+        time.sleep(0.01)
     
     uRAD.turnOFF()
 
