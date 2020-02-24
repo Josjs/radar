@@ -10,12 +10,10 @@ import uRAD
 
 parser = argparse.ArgumentParser()
 parser.add_argument("points", type=int, default = 0, nargs="?",
-                    help = "number of datapoints to take"
-                    )
+                    help = "number of datapoints to take")
 parser.add_argument("-s", "--send", action="store_true")
 parser.add_argument("-d", "--duration", nargs=1, help = 
-                    "capture DURATION s of video on target detection"
-                    )
+                    "capture DURATION s of video on target detection")
 args = parser.parse_args()
 
 # camthread = 0
@@ -74,8 +72,8 @@ def datawrite(path):
 # Check if video capture thread is alive, or start a new
 def videocapture(duration, mode = 0):
     global camthread
-    if camthread.isAlive():
-        camthread.join(timeout = 0)
+    if camthread.is_alive():
+        # camthread.join(timeout = 0)
         print("is alive")
     else:
         print("is ded")
@@ -85,33 +83,35 @@ def videocapture(duration, mode = 0):
                                     args = (path, duration, mode)
                                     )
         camthread.start()
-        # camthread.run()
-        camthread.join(timeout = 0)
+        # camthread.join(timeout = 0)
         
-##############################################################################
+###############################################################################
 
-uRAD.loadConfiguration(mode, f0, BW, Ns, Ntar, Rmax, MTI, Mth)
-
-uRAD.turnON()
-
-datawrite(outdir + out_i)
-datawrite(outdir + out_q)
-   
-i = 0
-while (i < ndata or not ndata):
-    uRAD.detection(0, velocity, snr, iarr, qarr, movement)
-    if movement[0]==True:
-        print("velocity: {: 6.2f}, snr: {: 6.2f}".format(velocity[0], snr[0]))
-        if args.send:
-            send.send(2,np.mean(velocity),20,35)
-        if args.duration:
-            videocapture(args.duration, 1)
-    else:
-        print(i)
-    datappend(iarr, outdir + out_i)
-    datappend(qarr, outdir + out_q)
-    i += 1
-
-uRAD.turnOFF()
-
+if __name__ == "__main__":
+    uRAD.loadConfiguration(mode, f0, BW, Ns, Ntar, Rmax, MTI, Mth)    
+    uRAD.turnON()
+    
+    # Create files for logging
+    datawrite(outdir + out_i)
+    datawrite(outdir + out_q)
+       
+    i = 0
+    while (i < ndata or not ndata):
+        uRAD.detection(0, velocity, snr, iarr, qarr, movement)
+        if movement[0]==True:
+            print("velocity: {: 6.2f}, snr: {: 6.2f}".format(velocity[0],
+                                                             snr[0]))
+            if args.send:
+                #TODO: implement sending of actual data
+                send.send(2, np.mean(velocity), 20, 35)
+            if args.duration:
+                videocapture(args.duration, 1)
+        else:
+            print(i)
+        # save raw data from radar
+        datappend(iarr, outdir + out_i)
+        datappend(qarr, outdir + out_q)
+        i += 1
+    
+    uRAD.turnOFF()
 
