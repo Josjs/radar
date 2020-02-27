@@ -6,14 +6,15 @@ import datetime
 import numpy as np
 import send
 import threading
+import time
 import uRAD
 
 parser = argparse.ArgumentParser()
-parser.add_argument("points", type=int, default = 0, nargs="?",
+parser.add_argument("points", type = int, default = 0, nargs = "?",
                     help = "number of datapoints to take")
-parser.add_argument("-s", "--send", action="store_true",
+parser.add_argument("-s", "--send", action = "store_true",
                     help = "send data to server")
-parser.add_argument("-d", "--duration", nargs=1, help = 
+parser.add_argument("-d", "--duration", nargs = 1, type = int, help = 
                     "capture DURATION s of video on target detection")
 args = parser.parse_args()
 
@@ -21,7 +22,8 @@ args = parser.parse_args()
 if args.duration:
     global camthread
     camthread = threading.Thread()
- 
+    duration = int(args.duration[0])
+
 # uRAD.detection takes an array for each measurement it provides.
 # The format is:
 # uRAD.detection(distance, velocity, SNR, I, Q, movement)
@@ -48,9 +50,9 @@ movement        = [0]
 
 # Output directory
 outdir = "./output/"
-time = datetime.datetime.now().isoformat()
-out_i = "I_CW_{}.csv".format(time)
-out_q = "Q_CW_{}.csv".format(time)
+starttime = datetime.datetime.now().isoformat()
+out_i = "I/I_CW_{}.csv".format(starttime)
+out_q = "Q/Q_CW_{}.csv".format(starttime)
 
 # Number of datapoints to log, 0 will run forever
 ndata = args.points
@@ -58,9 +60,9 @@ ndata = args.points
 # Append one sample to csv file, 'safer' than overwriting
 def datappend(sample, path):
     csv_string = ""
-    for point in sample[:-1]:
+    for point in sample:
         csv_string += str(point) + ","
-    csv_string += str(sample[-1:][0]) + "\n"
+    csv_string += datetime.datetime.now().isoformat() + "\n"
     with open(path, 'a') as file:
         file.write(csv_string)
 
@@ -73,29 +75,27 @@ def datawrite(path):
 # Check if video capture thread is alive, or start a new
 def videocapture(duration, mode = 0):
     global camthread
-    if camthread.is_alive():
-        # camthread.join(timeout = 0)
-        print("is alive")
-    else:
+    # Do nothing if camera is already recording
+    if not camthread.is_alive():
         print("is ded")
         now = datetime.datetime.now().isoformat()
-        path = outdir + "{}.h264".format(now)
+        path = outdir + "vid/{}.h264".format(now)
         camthread = threading.Thread(target = cam.video,
-                                    args = (path, duration, mode)
-                                    )
+                                    args = (path, duration, mode))
         camthread.start()
-        # camthread.join(timeout = 0)
         
 ###############################################################################
 
 if __name__ == "__main__":
+    # Start radar
     uRAD.loadConfiguration(mode, f0, BW, Ns, Ntar, Rmax, MTI, Mth)    
     uRAD.turnON()
     
     # Create files for logging
     datawrite(outdir + out_i)
     datawrite(outdir + out_q)
-       
+    
+    # Capture ndata datapoints   
     i = 0
     while (i < ndata or not ndata):
         uRAD.detection(0, velocity, snr, iarr, qarr, movement)
@@ -105,11 +105,12 @@ if __name__ == "__main__":
             if args.send:
                 #TODO: implement sending of actual data
                 send.send(2, np.mean(velocity), 20, 35)
-            if args.duration:
-                videocapture(args.duration, 1)
+            if duration:
+                videocapture(duration, 1)
         else:
             print(i)
-        # save raw data from radar
+
+        # Save raw data from radar
         datappend(iarr, outdir + out_i)
         datappend(qarr, outdir + out_q)
         i += 1
@@ -117,4 +118,6 @@ if __name__ == "__main__":
         time.sleep(0.01)
     
     uRAD.turnOFF()
+    if duration:
+        camthread.join()
 

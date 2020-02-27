@@ -15,6 +15,7 @@ def capture_frame(mode=0):
     rawCapture = picamera.array.PiRGBArray(cam, size=modes[mode])
     time.sleep(0.1)
     cam.capture(rawCapture, format="bgr")
+    cam.close()
     img = rawCapture
     rawCapture.truncate(0)
     return img.array
