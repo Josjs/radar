@@ -18,7 +18,7 @@ parser.add_argument("-d", "--duration", nargs = 1, type = int, help =
                     "capture DURATION s of video on target detection")
 args = parser.parse_args()
 
-# camthread = 0
+duration = 0
 if args.duration:
     global camthread
     camthread = threading.Thread()
@@ -105,7 +105,7 @@ if __name__ == "__main__":
             if args.send:
                 #TODO: implement sending of actual data
                 send.send(2, np.mean(velocity), 20, 35)
-            if duration:
+            if args.duration:
                 videocapture(duration, 1)
         else:
             print(i)
@@ -119,5 +119,6 @@ if __name__ == "__main__":
     
     uRAD.turnOFF()
     if duration:
-        camthread.join()
+        if camthread.is_alive():
+            camthread.join()
 
