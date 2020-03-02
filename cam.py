@@ -11,7 +11,7 @@ def capture_frame(mode=0):
         resolution = modes[mode],
         # framerate_range = 10
         )
-    cam.awb_mode = "cloudy"
+    cam.awb_mode = "tungsten"
     rawCapture = picamera.array.PiRGBArray(cam, size=modes[mode])
     time.sleep(0.1)
     cam.capture(rawCapture, format="bgr")
@@ -28,7 +28,7 @@ def save_frame(path, frame):
 def video(path, duration, mode=0):
     modes = [(640,480), (1920,1080)]
     with  picamera.PiCamera(resolution = modes[mode]) as cam:
-        cam.awb_mode = "cloudy"
+        cam.awb_mode = "tungsten"
         # Camera setup time
         time.sleep(0.1)
         cam.start_recording(path)
