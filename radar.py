@@ -16,6 +16,8 @@ parser.add_argument("-s", "--send", action = "store_true",
                     help = "send data to server")
 parser.add_argument("-d", "--duration", nargs = 1, type = int, help = 
                     "capture DURATION s of video on target detection")
+parser.add_argument("-t", "--turbine", type = int, default = 2,
+                    help = "id number of your wind-turbine")
 args = parser.parse_args()
 
 duration = 0
@@ -102,13 +104,17 @@ if __name__ == "__main__":
         if movement[0]==True:
             print("velocity: {: 6.2f}, snr: {: 6.2f}".format(velocity[0],
                                                              snr[0]))
-            if args.send:
-                #TODO: implement sending of actual data
-                send.send(2, np.mean(velocity), 20, 35)
             if args.duration:
                 videocapture(duration, 1)
         else:
             print(i)
+
+        # Send data if enabled        
+        if args.send:
+            # TODO: make function for data collection
+            # send(turbine_id, end, start, birdmins, speed, temp, humid)
+            # send.send(args.turbine, ... ) 
+            print("Sending not implemented yetttt...")
 
         # Save raw data from radar
         datappend(iarr, outdir + out_i)
