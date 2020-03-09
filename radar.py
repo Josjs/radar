@@ -19,7 +19,7 @@ parser.add_argument("-d", "--duration", nargs = 1, type = int, help =
 parser.add_argument("-t", "--turbine", type = int, default = 2,
                     help = "id number of your wind-turbine")
 parser.add_argument("-n", "--no-log", action = "store_false", help =
-                    "do write logfiles")
+                    "do not write logfiles")
 args = parser.parse_args()
 
 duration = 0
@@ -53,7 +53,7 @@ qarr            = [0] * Ns
 movement        = [0]
 
 # Output directory
-outdir = "./output/"
+outdir = "/home/pi/fugl/radar/output/"
 starttime = datetime.datetime.now().isoformat()
 out_i = "I/I_CW_{}.csv".format(starttime)
 out_q = "Q/Q_CW_{}.csv".format(starttime)
@@ -114,7 +114,7 @@ def videocapture(duration, mode = 0):
     global camthread
     # Do nothing if camera is already recording
     if not camthread.is_alive():
-        print("is ded")
+        # print("is ded")
         now = datetime.datetime.now().isoformat()
         path = outdir + "vid/{}.h264".format(now)
         camthread = threading.Thread(target = cam.video,
@@ -159,12 +159,20 @@ if __name__ == "__main__":
 
         # Send data if enabled        
         if args.send and not (i + 1) % nsend and len(activity):
-            # TODO: do not reset if we cant send data 
             # send(turbine_id, end, start, birdmins, speed, temp, humid)
             end, start, bms, speed = birdmins(activity)
-            send.send(args.turbine, end, start, bms, speed, 20, 35) 
-            print("{} Sending".format(activity))
-            activity = []
+            
+            try:
+                send.call_with_timeout(
+                    send.send,
+                    (args.turbine, end, start, bms, speed, 20, 35),
+                    3)
+                print("{} Sending".format(activity))
+            except:
+                #oisann
+                print("Could not send data this time.")
+            else:
+                activity = []
 
         # Save raw data from radar
         if (not args.no_log):
@@ -178,8 +186,21 @@ if __name__ == "__main__":
     # Turn off radar
     uRAD.turnOFF()
     
+    # Wait for data transmission
+    if args.send and len(activity):
+        # send(turbine_id, end, start, birdmins, speed, temp, humid)
+        end, start, bms, speed = birdmins(activity)        
+        try:
+            send.call_with_timeout(
+                send.send,
+                (args.turbine, end, start, bms, speed, 20, 35),
+                30)
+            print("{} Sending".format(activity))
+        except:
+            #oisann
+            print("Could not send data this time.")
+
     # Wait for camera to finish last recording
     if duration:
         if camthread.is_alive():
             camthread.join()
-
