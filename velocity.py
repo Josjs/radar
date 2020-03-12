@@ -32,8 +32,8 @@ def velocity(i_file, q_file):
     Fs = 25000 # sampling frequency
     v0 = (Fs/2 * c) / (2 * f0)
 
-    i_data = "rawdata_files/" + i_file
-    q_data = "rawdata_files/" + q_file
+    i_data = "rawdata_files/I/" + i_file
+    q_data = "rawdata_files/Q/" + q_file
 
     i = []
     q = []
@@ -73,6 +73,7 @@ def velocity(i_file, q_file):
         # TODO: Fix time-axes
         time = range(0, len(v_list))
         ax[1].scatter(time, v_list)
+        ax[1].plot(time, v_list)
         plt.show()
         file_1.close()
         file_2.close()
@@ -81,5 +82,5 @@ def velocity(i_file, q_file):
 
 
 if __name__ == "__main__":
-    v_list = velocity("I_CW.csv", "Q_CW.csv")
+    v_list = velocity("I_CW_2020-02-27T08:49:05.702846.csv", "Q_CW_2020-02-27T08:49:05.702846.csv")
     print(v_list)
