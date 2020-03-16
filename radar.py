@@ -18,6 +18,8 @@ parser.add_argument("-d", "--duration", nargs = 1, type = int, help =
                     "capture DURATION s of video on target detection")
 parser.add_argument("-t", "--turbine", type = int, default = 2,
                     help = "id number of your wind-turbine")
+parser.add_argument("-n", "--no-log", action = "store_false", help =
+                    "do not write logfiles")
 args = parser.parse_args()
 
 duration = 0
@@ -51,13 +53,46 @@ qarr            = [0] * Ns
 movement        = [0]
 
 # Output directory
-outdir = "./output/"
+outdir = "/home/pi/fugl/radar/output/"
 starttime = datetime.datetime.now().isoformat()
 out_i = "I/I_CW_{}.csv".format(starttime)
 out_q = "Q/Q_CW_{}.csv".format(starttime)
 
 # Number of datapoints to log, 0 will run forever
 ndata = args.points
+
+# Calculate endtime, starttime and birdminutes from 2D-array
+def birdmins(arr):
+    # arr = [datetime, activity {0..5}, avgspeed]
+    # add maximum 10 birdseconds, in case of hangs
+    if len(arr):
+        maxtime   = 10
+        activity  = 0
+        birdmins  = 0.0
+        endtime   = arr[-1][0]
+        starttime = arr[0][0]
+        sumspeed  = 0.0
+        for i in range(0, len(arr) - 1):
+            if arr[i][1]:
+                # Add time since last measurement multiplied by number of birds
+                # Use the least amount of birds, even if this is 0
+                nbirds = min(activity, arr[i][1])
+                dt = arr[i + 1][0] - arr[i][0]
+                t = min(maxtime, round(dt.seconds + dt.microseconds * 1e-6, 2))
+    
+                # print("Calculated Δt: ", t)
+    
+                birdmins += nbirds * t / 60
+                sumspeed += arr[i][2]
+                activity = arr[i][1]
+            else:
+                activity = 0
+        return endtime, starttime, birdmins, sumspeed / len(arr)
+
+# Buffer datapoints before sending
+def buffadd(arr, velocity):
+    arr.append([datetime.datetime.now(), len(velocity), 
+               np.average(np.abs(velocity))])
 
 # Append one sample to csv file, 'safer' than overwriting
 def datappend(sample, path):
@@ -74,12 +109,30 @@ def datawrite(path):
         #do nothing
         file.write("")
 
+# Large function for handling data transmission
+def transmit(timeout):
+    global activity
+    if args.send and not (i + 1) % nsend and len(activity):
+        # send(turbine_id, end, start, birdmins, speed, temp, humid)
+        end, start, bms, speed = birdmins(activity)     
+        try:
+            send.call_with_timeout(
+                send.send,
+                (args.turbine, end, start, bms, speed, 20, 35),
+                timeout)
+            print("Data transmission OK."))
+        except:
+            #oisann
+            print("Could not send data this time.")
+        else:
+            activity = []
+
 # Check if video capture thread is alive, or start a new
 def videocapture(duration, mode = 0):
     global camthread
     # Do nothing if camera is already recording
     if not camthread.is_alive():
-        print("is ded")
+        # print("is ded")
         now = datetime.datetime.now().isoformat()
         path = outdir + "vid/{}.h264".format(now)
         camthread = threading.Thread(target = cam.video,
@@ -89,42 +142,59 @@ def videocapture(duration, mode = 0):
 ###############################################################################
 
 if __name__ == "__main__":
+    # Number of samples to average before sending
+    nsend = 100 
+
     # Start radar
     uRAD.loadConfiguration(mode, f0, BW, Ns, Ntar, Rmax, MTI, Mth)    
     uRAD.turnON()
     
     # Create files for logging
-    datawrite(outdir + out_i)
-    datawrite(outdir + out_q)
+    if (not args.no_log):
+        datawrite(outdir + out_i)
+        datawrite(outdir + out_q)
+
+    # Create buffer for sending
+    if args.send:
+        global activity
+        activity = []
     
+    # Main datacollection loop
     # Capture ndata datapoints   
     i = 0
     while (i < ndata or not ndata):
         uRAD.detection(0, velocity, snr, iarr, qarr, movement)
         if movement[0]==True:
-            print("velocity: {: 6.2f}, snr: {: 6.2f}".format(velocity[0],
-                                                             snr[0]))
+            print("{}: velocity: {: 3.2f}, snr: {: 3.2f}"
+                  .format(i, velocity[0], snr[0]))
             if args.duration:
                 videocapture(duration, 1)
+            if args.send:
+                # Collect data
+                buffadd(activity, velocity)
         else:
             print(i)
 
-        # Send data if enabled        
-        if args.send:
-            # TODO: make function for data collection
-            # send(turbine_id, end, start, birdmins, speed, temp, humid)
-            # send.send(args.turbine, ... ) 
-            print("Sending not implemented yetttt...")
+        # Send data
+        # TODO: threading
+        transmit(timeout = 3)
 
         # Save raw data from radar
-        datappend(iarr, outdir + out_i)
-        datappend(qarr, outdir + out_q)
-        i += 1
+        if not args.no_log:
+            datappend(iarr, outdir + out_i)
+            datappend(qarr, outdir + out_q)
+
         # Delay so we do not fry the CPU
         time.sleep(0.01)
+        i += 1
     
+    # Turn off radar
     uRAD.turnOFF()
+    
+    # Wait for data transmission
+    transmit(timeout = 30)
+    
+    # Wait for camera to finish last recording
     if duration:
         if camthread.is_alive():
             camthread.join()
-
