@@ -40,7 +40,7 @@ def call_with_timeout(func, args, timeout):
         p.join()
         raise TimeoutError
     else:
-        return return_dict['value']
+        return #return_dict['value']
 
 if __name__ == "__main__":
     # for testing purposes

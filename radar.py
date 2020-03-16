@@ -1,13 +1,13 @@
 #!/usr/bin/python3
 
 import argparse
-import cam
-import datetime
-import numpy as np
-import send
-import threading
-import time
-import uRAD
+# import cam
+# import datetime
+# import numpy as np
+# import send
+# import threading
+# import time
+# import uRAD
 
 parser = argparse.ArgumentParser()
 parser.add_argument("points", type = int, default = 0, nargs = "?",
@@ -20,7 +20,17 @@ parser.add_argument("-t", "--turbine", type = int, default = 2,
                     help = "id number of your wind-turbine")
 parser.add_argument("-n", "--no-log", action = "store_false", help =
                     "do not write logfiles")
+parser.add_argument("-v", "--verbose", action = "store_false", help =
+                    "Print more debug-info")
 args = parser.parse_args()
+
+import cam
+import datetime
+import numpy as np
+import send
+import threading
+import time
+import uRAD
 
 duration = 0
 if args.duration:
@@ -28,6 +38,7 @@ if args.duration:
     camthread = threading.Thread()
     duration = int(args.duration[0])
 
+v = args.verbose
 # uRAD.detection takes an array for each measurement it provides.
 # The format is:
 # uRAD.detection(distance, velocity, SNR, I, Q, movement)
@@ -44,6 +55,9 @@ Rmax = 25  # searching in a range of 25 m/s
 f0   = 100 # starting at 24.1 GHz
 mode = 1   # 1 = doppler mode
 
+# Output folder
+outdir = "/home/pi/fugl/radar/output/"
+
 # Data output arrays
 distance        = [0] * Ntar
 velocity        = [0] * Ntar
@@ -52,8 +66,7 @@ iarr            = [0] * Ns
 qarr            = [0] * Ns
 movement        = [0]
 
-# Output directory
-outdir = "/home/pi/fugl/radar/output/"
+# Filenames for logging
 starttime = datetime.datetime.now().isoformat()
 out_i = "I/I_CW_{}.csv".format(starttime)
 out_q = "Q/Q_CW_{}.csv".format(starttime)
@@ -80,7 +93,7 @@ def birdmins(arr):
                 dt = arr[i + 1][0] - arr[i][0]
                 t = min(maxtime, round(dt.seconds + dt.microseconds * 1e-6, 2))
     
-                # print("Calculated Δt: ", t)
+                v or print("Calculated Δt: ", t)
     
                 birdmins += nbirds * t / 60
                 sumspeed += arr[i][2]
@@ -112,7 +125,8 @@ def datawrite(path):
 # Large function for handling data transmission
 def transmit(timeout):
     global activity
-    if args.send and not (i + 1) % nsend and len(activity):
+    # if args.send and not (i + 1) % nsend and len(activity):
+    if args.send and len(activity):
         # send(turbine_id, end, start, birdmins, speed, temp, humid)
         end, start, bms, speed = birdmins(activity)     
         try:
@@ -120,7 +134,7 @@ def transmit(timeout):
                 send.send,
                 (args.turbine, end, start, bms, speed, 20, 35),
                 timeout)
-            print("Data transmission OK."))
+            print("Data transmission OK, {:5.2f} birdminutes.")
         except:
             #oisann
             print("Could not send data this time.")
@@ -132,7 +146,6 @@ def videocapture(duration, mode = 0):
     global camthread
     # Do nothing if camera is already recording
     if not camthread.is_alive():
-        # print("is ded")
         now = datetime.datetime.now().isoformat()
         path = outdir + "vid/{}.h264".format(now)
         camthread = threading.Thread(target = cam.video,
@@ -143,7 +156,7 @@ def videocapture(duration, mode = 0):
 
 if __name__ == "__main__":
     # Number of samples to average before sending
-    nsend = 100 
+    nsend = 750 #approx 1 min
 
     # Start radar
     uRAD.loadConfiguration(mode, f0, BW, Ns, Ntar, Rmax, MTI, Mth)    
@@ -165,7 +178,7 @@ if __name__ == "__main__":
     while (i < ndata or not ndata):
         uRAD.detection(0, velocity, snr, iarr, qarr, movement)
         if movement[0]==True:
-            print("{}: velocity: {: 3.2f}, snr: {: 3.2f}"
+            v or print("{}: velocity: {: 3.2f}, snr: {: 3.2f}"
                   .format(i, velocity[0], snr[0]))
             if args.duration:
                 videocapture(duration, 1)
@@ -173,11 +186,12 @@ if __name__ == "__main__":
                 # Collect data
                 buffadd(activity, velocity)
         else:
-            print(i)
+            v or print(i)
 
         # Send data
         # TODO: threading
-        transmit(timeout = 3)
+        if not (i + 1) % nsend: 
+            transmit(timeout = 3)
 
         # Save raw data from radar
         if not args.no_log:
