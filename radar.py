@@ -25,6 +25,7 @@ parser.add_argument("-v", "--verbose", action = "store_false", help =
 args = parser.parse_args()
 
 import cam
+import cputemp
 import datetime
 import numpy as np
 import send
@@ -132,7 +133,7 @@ def transmit(timeout):
         try:
             send.call_with_timeout(
                 send.send,
-                (args.turbine, end, start, bms, speed, 20, 35),
+                (args.turbine, end, start, bms, speed, cputemp.get, 35),
                 timeout)
             print("Data transmission OK, {:5.2f} birdminutes.")
         except:
