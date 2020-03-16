@@ -1,85 +1,53 @@
-import csv
 import matplotlib.pyplot as plt
+from scipy import signal
 import numpy as np
 
-"""
-Processing data from uRad
 
-This script aims to process doppler_shift
-and calculate radial velocity of
-incoming/outgoing objects.
-"""
-
-def velocity(i_file, q_file):
+def velocity(I_data, Q_data):
     """
-    Calculate velocity
+    Calculates velocities of a single sample.
 
-    This function fetches rawdata from
-    file, calculates doppler_shift and velocity.
+    Passed in parameters are I_data and Q_data
+    arrays, samplesize is 200.
 
-    Parameters:
-    :c (int): speed of light
-    :f0 (int): radar frequency
-    :Fs (int): sampling frequency
-    :v0 (func): velocity
-    :i (list): infase component
-    :q (list): quadrature component
-    :fd (int): doppler_shift
-    :return: v_list: list of sample velocities
+    Return parameter:
+    :: velocities :: list :: contains velocities registered in sample
     """
+
     c = 299792458
-    f0 = 24.05e9 # 24.05 GHz
+    f0 = 24.05e9
     Fs = 25000 # sampling frequency
-    v0 = (Fs/2 * c) / (2 * f0)
+    v0 = (c * Fs/2) / (2 * f0)
+    velocities = []
 
-    i_data = "rawdata_files/" + i_file
-    q_data = "rawdata_files/" + q_file
+    I_data = I_data - np.mean(I_data)
+    Q_data = Q_data - np.mean(Q_data)
+    complex_sig = I_data + (1j * Q_data)
+    fft_sig = abs(np.fft.fftshift(np.fft.fft(complex_sig, 4096)))
+    fd_list = signal.find_peaks(fft_sig, distance = 400, prominence = 400)[0]
+    v_convert = np.linspace(-v0, v0, 4096)
+    for sample in fd_list:
+        velocities.append(v_convert[sample])
 
-    i = []
-    q = []
-    v_list = []
-
-    with open(i_data) as file_1, open(q_data) as file_2:
-        i_read = csv.reader(file_1)
-        q_read = csv.reader(file_2)
-
-        fig, ax = plt.subplots(1, 2) # initialize plots
-        ax[0].set_title('Frequency Components')
-        ax[0].set_xlabel('Frequency [Hz]')
-        ax[0].set_ylabel('Amplitude')
-        ax[1].set_title('Velocity')
-        ax[1].set_xlabel('time (?)')
-        ax[1].set_ylabel('m/s')
-
-        for rows_i, rows_q in zip(i_read, q_read):
-
-            i = ([int(value_i) for value_i in rows_i[:200]]) # infase
-            q = ([int(value_q) for value_q in rows_q[:200]]) # quadrature
-
-            i = i - np.mean(i) # remove dc-offset
-            q = q - np.mean(q)
-
-            complex_sig = i + (1j * q)
-            fft_sig = np.fft.fftshift(np.fft.fft(complex_sig, 4096))
-
-            f = np.linspace(-Fs/2, Fs/2, 4095)
-            ax[0].plot(f, abs(fft_sig[1:]))
-
-            fd_sample = np.argmax(fft_sig)
-            v_convert = np.linspace(-v0, v0, 4095)
-            v = v_convert[fd_sample]
-            v_list.append(v) # list of sample velocities
-
-        # TODO: Fix time-axes
-        time = range(0, len(v_list))
-        ax[1].scatter(time, v_list)
-        plt.show()
-        file_1.close()
-        file_2.close()
-
-    return v_list
+    return velocities
 
 
-if __name__ == "__main__":
-    v_list = velocity("I_CW.csv", "Q_CW.csv")
-    print(v_list)
+
+
+
+
+
+
+
+
+
+
+
+if __name__  == '__main__':
+    """ Testcase data """
+
+    data_I = [1996,2002,2001,1993,2007,2005,2017,2018,2022,2020,2011,2002,1994,1989,1995,2001,2005,2011,2019,2018,2016,2007,2000,2004,2007,2005,2010,2010,2020,2020,2012,2009,2005,2002,1989,2000,1991,1994,1993,1991,1995,2007,2001,2010,2010,2027,2020,2019,2013,2020,2012,2020,2020,2021,2011,2016,2016,2013,2011,2009,2009,2016,2007,2004,2002,1996,2002,1996,2000,1991,2001,2005,2016,2011,2019,2016,2027,2022,2022,2016,2017,2007,2010,1994,2001,1996,1995,1988,1990,1985,1997,1994,2001,2008,2008,2007,2011,2009,2005,2010,2008,2013,1997,2004,1997,2001,1992,1992,1996,1996,2010,2012,2020,2021,2017,2022,2009,2009,1994,1997,2002,2003,2004,2010,2023,2024,2021,2010,2002,1996,1996,2005,2018,2003,2007,2017,2021,2023,2020,2021,2016,2000,1995,1996,1995,1996,2004,2007,2017,2013,2026,2021,2018,2017,2004,2008,1996,2000,1988,2006,1994,1997,1997,2003,2008,2007,2006,2017,2008,2012,2012,2013,2018,2021,2016,2013,2009,2002,2004,2008,1997,1996,1995,2000,1996,1987,2005,2008,2009,2023,2024,2021,2018,2023,2010,2011,2005,2003,2003,2000]
+
+    data_Q = [2017,2019,2022,2012,2021,2023,2026,2023,2022,2017,2006,2003,2011,2012,2011,2017,2018,2022,2024,2018,2016,2011,2006,2017,2017,2020,2012,2023,2021,2026,2012,2016,2009,2009,2006,2022,2007,2017,2010,2018,2018,2018,2017,2020,2012,2024,2018,2020,2024,2023,2023,2021,2020,2023,2026,2020,2027,2021,2032,2023,2028,2024,2025,2021,2025,2018,2020,2010,2017,2012,2016,2016,2023,2022,2025,2025,2027,2027,2024,2020,2020,2019,2021,2017,2017,2018,2011,2010,2010,2017,2007,2007,2005,2018,2012,2019,2017,2020,2009,2020,2016,2021,2010,2011,2010,2022,2018,2017,2019,2019,2023,2022,2026,2026,2020,2022,2018,2009,2016,2012,2021,2019,2025,2027,2036,2024,2023,2009,2012,2016,2019,2017,2019,2020,2021,2022,2025,2018,2026,2012,2008,2009,2010,2013,2018,2020,2021,2022,2024,2028,2023,2032,2020,2023,2010,2012,2011,2012,2009,2010,2004,2006,2005,2009,2005,2012,2012,2019,2013,2022,2016,2027,2024,2026,2022,2032,2023,2029,2027,2023,2021,2021,2022,2013,2016,2014,2017,2010,2021,2023,2028,2024,2028,2026,2027,2023,2028,2023,2024,2013]
+
+    velocity(data_I, data_Q)
