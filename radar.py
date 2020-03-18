@@ -133,7 +133,7 @@ def transmit(timeout):
         try:
             send.call_with_timeout(
                 send.send,
-                (args.turbine, end, start, bms, speed, cputemp.get, 35),
+                (args.turbine, end, start, bms, speed, cputemp.get(), 35),
                 timeout)
             print("Data transmission OK, {:5.2f} birdminutes.".format(bms))
         except:
