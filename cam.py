@@ -31,6 +31,6 @@ def video(path, duration, mode=0):
         cam.awb_mode = "tungsten"
         # Camera setup time
         time.sleep(0.1)
-        cam.start_recording(path)
+        cam.start_recording(path, quality = 25)
         cam.wait_recording(duration)
         cam.stop_recording()
