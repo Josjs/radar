@@ -18,8 +18,8 @@ parser.add_argument("-d", "--duration", nargs = 1, type = int, help =
                     "capture DURATION s of video on target detection")
 parser.add_argument("-t", "--turbine", type = int, default = 2,
                     help = "id number of your wind-turbine")
-parser.add_argument("-n", "--no-log", action = "store_false", help =
-                    "do not write logfiles")
+parser.add_argument("-l", "--log", action = "store_true", help =
+                    "write logfiles")
 parser.add_argument("-v", "--verbose", action = "store_false", help =
                     "Print more debug-info")
 args = parser.parse_args()
@@ -135,7 +135,7 @@ def transmit(timeout):
                 send.send,
                 (args.turbine, end, start, bms, speed, cputemp.get, 35),
                 timeout)
-            print("Data transmission OK, {:5.2f} birdminutes.")
+            print("Data transmission OK, {:5.2f} birdminutes.".format(bms))
         except:
             #oisann
             print("Could not send data this time.")
@@ -164,7 +164,7 @@ if __name__ == "__main__":
     uRAD.turnON()
     
     # Create files for logging
-    if (not args.no_log):
+    if args.log:
         datawrite(outdir + out_i)
         datawrite(outdir + out_q)
 
@@ -195,7 +195,7 @@ if __name__ == "__main__":
             transmit(timeout = 3)
 
         # Save raw data from radar
-        if not args.no_log:
+        if args.log:
             datappend(iarr, outdir + out_i)
             datappend(qarr, outdir + out_q)
 
