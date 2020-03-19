@@ -1,13 +1,6 @@
 #!/usr/bin/python3
 
 import argparse
-# import cam
-# import datetime
-# import numpy as np
-# import send
-# import threading
-# import time
-# import uRAD
 
 parser = argparse.ArgumentParser()
 parser.add_argument("points", type = int, default = 0, nargs = "?",
@@ -32,6 +25,7 @@ import send
 import threading
 import time
 import uRAD
+import velocity as vel
 
 duration = 0
 if args.duration:
@@ -177,10 +171,14 @@ if __name__ == "__main__":
     # Capture ndata datapoints   
     i = 0
     while (i < ndata or not ndata):
-        uRAD.detection(0, velocity, snr, iarr, qarr, movement)
-        if movement[0]==True:
-            v or print("{}: velocity: {: 3.2f}, snr: {: 3.2f}"
-                  .format(i, velocity[0], snr[0]))
+        # uRAD.detection(0, velocity, snr, iarr, qarr, movement)
+        # if movement[0]==True:
+        uRAD.detection(0, 0, 0, iarr, qarr, movement)
+        velocity = vel.velocity(iarr, qarr)
+        print(velocity)
+        if len(velocity):
+            # v or print("{}: velocity: {: 3.2f}, snr: {: 3.2f}"
+            #      .format(i, velocity[0], snr[0]))
             if args.duration:
                 videocapture(duration, 1)
             if args.send:
