@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 from scipy import signal
 import numpy as np
-
+import csv
 
 def velocity(I_data, Q_data):
     """
@@ -23,31 +23,79 @@ def velocity(I_data, Q_data):
     I_data = I_data - np.mean(I_data)
     Q_data = Q_data - np.mean(Q_data)
     complex_sig = I_data + (1j * Q_data)
-    fft_sig = abs(np.fft.fftshift(np.fft.fft(complex_sig, 4096)))
-    fd_list = signal.find_peaks(fft_sig, distance = 400, prominence = 400)[0]
-    v_convert = np.linspace(-v0, v0, 4096)
+    fft_sig = abs(np.fft.fftshift(np.fft.fft(complex_sig, 2048)))
+    fd_list = signal.find_peaks(fft_sig, distance = 400, prominence = 4000)[0]
+    v_convert = np.linspace(-v0, v0, 2048)
     for sample in fd_list:
-        velocities.append(v_convert[sample])
+        velocity = v_convert[sample]
+        if velocity > 30:
+            continue
+        else: velocities.append(velocity)
 
     return velocities
 
 
-
-
-
-
-
-
-
-
-
-
-
 if __name__  == '__main__':
     """ Testcase data """
-
-    data_I = [1996,2002,2001,1993,2007,2005,2017,2018,2022,2020,2011,2002,1994,1989,1995,2001,2005,2011,2019,2018,2016,2007,2000,2004,2007,2005,2010,2010,2020,2020,2012,2009,2005,2002,1989,2000,1991,1994,1993,1991,1995,2007,2001,2010,2010,2027,2020,2019,2013,2020,2012,2020,2020,2021,2011,2016,2016,2013,2011,2009,2009,2016,2007,2004,2002,1996,2002,1996,2000,1991,2001,2005,2016,2011,2019,2016,2027,2022,2022,2016,2017,2007,2010,1994,2001,1996,1995,1988,1990,1985,1997,1994,2001,2008,2008,2007,2011,2009,2005,2010,2008,2013,1997,2004,1997,2001,1992,1992,1996,1996,2010,2012,2020,2021,2017,2022,2009,2009,1994,1997,2002,2003,2004,2010,2023,2024,2021,2010,2002,1996,1996,2005,2018,2003,2007,2017,2021,2023,2020,2021,2016,2000,1995,1996,1995,1996,2004,2007,2017,2013,2026,2021,2018,2017,2004,2008,1996,2000,1988,2006,1994,1997,1997,2003,2008,2007,2006,2017,2008,2012,2012,2013,2018,2021,2016,2013,2009,2002,2004,2008,1997,1996,1995,2000,1996,1987,2005,2008,2009,2023,2024,2021,2018,2023,2010,2011,2005,2003,2003,2000]
-
-    data_Q = [2017,2019,2022,2012,2021,2023,2026,2023,2022,2017,2006,2003,2011,2012,2011,2017,2018,2022,2024,2018,2016,2011,2006,2017,2017,2020,2012,2023,2021,2026,2012,2016,2009,2009,2006,2022,2007,2017,2010,2018,2018,2018,2017,2020,2012,2024,2018,2020,2024,2023,2023,2021,2020,2023,2026,2020,2027,2021,2032,2023,2028,2024,2025,2021,2025,2018,2020,2010,2017,2012,2016,2016,2023,2022,2025,2025,2027,2027,2024,2020,2020,2019,2021,2017,2017,2018,2011,2010,2010,2017,2007,2007,2005,2018,2012,2019,2017,2020,2009,2020,2016,2021,2010,2011,2010,2022,2018,2017,2019,2019,2023,2022,2026,2026,2020,2022,2018,2009,2016,2012,2021,2019,2025,2027,2036,2024,2023,2009,2012,2016,2019,2017,2019,2020,2021,2022,2025,2018,2026,2012,2008,2009,2010,2013,2018,2020,2021,2022,2024,2028,2023,2032,2020,2023,2010,2012,2011,2012,2009,2010,2004,2006,2005,2009,2005,2012,2012,2019,2013,2022,2016,2027,2024,2026,2022,2032,2023,2029,2027,2023,2021,2021,2022,2013,2016,2014,2017,2010,2021,2023,2028,2024,2028,2026,2027,2023,2028,2023,2024,2013]
-
-    velocity(data_I, data_Q)
+    # no_velocity_I = []
+    # no_velocity_Q = []
+    # some_velocity_I = []
+    # some_velocity_Q = []
+    # more_I = []
+    # more_Q = []
+    #
+    #
+    # with open("rawdata_files/uten_I.csv", "r" ) as file:
+    #     I_without = csv.reader(file)
+    #     for row in I_without:
+    #         row.pop() # remove time stamp
+    #         row = [int(x) for x in row]
+    #         no_velocity_I.append(row)
+    #
+    # with open("rawdata_files/uten_Q.csv", "r" ) as file:
+    #     Q_without = csv.reader(file)
+    #     for row in Q_without:
+    #         row.pop() # remove time stamp
+    #         row = [int(x) for x in row]
+    #         no_velocity_Q.append(row)
+    #
+    # with open("rawdata_files/litt_I.csv", "r" ) as file:
+    #     I_some = csv.reader(file)
+    #     for row in I_some:
+    #         row.pop() # remove time stamp
+    #         row = [int(x) for x in row]
+    #         some_velocity_I.append(row)
+    #
+    # with open("rawdata_files/litt_Q.csv", "r" ) as file:
+    #     Q_some = csv.reader(file)
+    #     for row in Q_some:
+    #         row.pop() # remove time stamp
+    #         row = [int(x) for x in row]
+    #         some_velocity_Q.append(row)
+    #
+    # with open("rawdata_files/mer_I.csv", "r" ) as file:
+    #     I_more = csv.reader(file)
+    #     for row in I_more:
+    #         row.pop() # remove time stamp
+    #         row = [int(x) for x in row]
+    #         more_I.append(row)
+    #
+    # with open("rawdata_files/mer_I.csv", "r" ) as file:
+    #     Q_more = csv.reader(file)
+    #     for row in Q_more:
+    #         row.pop() # remove time stamp
+    #         row = [int(x) for x in row]
+    #         more_Q.append(row)
+    #
+    # # for meas in range(0, 100):
+    # #     velocities, v_convert, fft_sig = velocity(no_velocity_I[meas], no_velocity_Q[meas])
+    # #     plt.plot(v_convert, fft_sig, color = "red")
+    # #     velocities, v_convert, fft_sig = velocity(some_velocity_I[meas], some_velocity_Q[meas])
+    # #     plt.plot(v_convert, fft_sig, color = "blue")
+    # #     velocities, v_convert, fft_sig = velocity(more_I[meas], more_Q[meas])
+    # #     plt.plot(v_convert, fft_sig, color = "green")
+    # #
+    # # plt.show()
+    # #
+    # # for meas in range(0, len(more_I)):
+    # #     print(velocity(more_I[meas],more_Q[meas]))
