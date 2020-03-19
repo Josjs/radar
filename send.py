@@ -40,7 +40,7 @@ def call_with_timeout(func, args, timeout):
         p.join()
         raise TimeoutError
     else:
-        return return_dict['value']
+        return #return_dict['value']
 
 if __name__ == "__main__":
     # for testing purposes
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     end = datetime.datetime.now()
     start = end - datetime.timedelta(0,10,0)
     try:
-        call_with_timeout(send, (2, end, start, 0.1, 4.0, 15.3, 34.3), 2)
+        call_with_timeout(send, (2, end, start, 0.0, 4.0, 75.3, 34.3), 2)
     except:
         print("jj")
     # sendthread = threading.Thread(target = send, args = (2, end, start, 0.1, 4.0, 15.3, 34.3))
