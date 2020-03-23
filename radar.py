@@ -62,7 +62,7 @@ qarr            = [0] * Ns
 movement        = [0]
 
 # Filenames for logging
-starttime = datetime.datetime.now().isoformat()
+starttime = datetime.datetime.now().isoformat(timespec="seconds")
 out_i = "I/I_CW_{}.csv".format(starttime)
 out_q = "Q/Q_CW_{}.csv".format(starttime)
 
@@ -107,7 +107,7 @@ def datappend(sample, path):
     csv_string = ""
     for point in sample:
         csv_string += str(point) + ","
-    csv_string += datetime.datetime.now().isoformat() + "\n"
+    csv_string += datetime.datetime.now().isoformat(timespec="milliseconds") + "\n"
     with open(path, 'a') as file:
         file.write(csv_string)
 
@@ -141,7 +141,7 @@ def videocapture(duration, mode = 0):
     global camthread
     # Do nothing if camera is already recording
     if not camthread.is_alive():
-        now = datetime.datetime.now().isoformat()
+        now = datetime.datetime.now().isoformat(timespec="seconds")
         path = outdir + "vid/{}.h264".format(now)
         camthread = threading.Thread(target = cam.video,
                                     args = (path, duration, mode))
@@ -175,7 +175,7 @@ if __name__ == "__main__":
         # if movement[0]==True:
         uRAD.detection(0, 0, 0, iarr, qarr, movement)
         velocity = vel.velocity(iarr, qarr)
-        print(velocity)
+
         if len(velocity):
             # v or print("{}: velocity: {: 3.2f}, snr: {: 3.2f}"
             #      .format(i, velocity[0], snr[0]))
