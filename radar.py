@@ -71,11 +71,11 @@ ndata = args.points
 
 # Calculate endtime, starttime and birdminutes from 2D-array
 def birdmins(arr):
-    # arr = [datetime, activity {0..5}, avgspeed]
+    # arr = [datetime, active, avgspeed]
     # add maximum 10 birdseconds, in case of hangs
     if len(arr):
         maxtime   = 10
-        activity  = 0
+        active    = 0
         birdmins  = 0.0
         endtime   = arr[-1][0]
         starttime = arr[0][0]
@@ -84,17 +84,18 @@ def birdmins(arr):
             if arr[i][1]:
                 # Add time since last measurement multiplied by number of birds
                 # Use the least amount of birds, even if this is 0
-                nbirds = min(activity, arr[i][1])
-                dt = arr[i + 1][0] - arr[i][0]
-                t = min(maxtime, round(dt.seconds + dt.microseconds * 1e-6, 2))
+                nbirds = min(active, arr[i][1])
+                dt     = arr[i + 1][0] - arr[i][0]
+                t      = min(maxtime,
+                             round(dt.seconds + dt.microseconds * 1e-6, 2))
     
                 v or print("Calculated Δt: ", t)
     
                 birdmins += nbirds * t / 60
                 sumspeed += arr[i][2]
-                activity = arr[i][1]
+                active    = arr[i][1]
             else:
-                activity = 0
+                active    = 0
         return endtime, starttime, birdmins, sumspeed / len(arr)
 
 # Buffer datapoints before sending
@@ -116,6 +117,12 @@ def datawrite(path):
     with open(path, 'w') as file:
         #do nothing
         file.write("")
+
+def key_capture_thread():
+    global keep_going
+    while True:
+        if input() in ("quit", "exit"):
+            keep_going = False
 
 # Large function for handling data transmission
 def transmit(timeout):
@@ -170,16 +177,23 @@ if __name__ == "__main__":
     # Main datacollection loop
     # Capture ndata datapoints   
     i = 0
-    while (i < ndata or not ndata):
+    keep_going = True
+    threading.Thread(target=key_capture_thread, args=(),
+                     name='key_capture_thread', daemon=True).start()
+    while keep_going and (i < ndata or not ndata):
+        if len(velocity):
+            lastsample = True
+        else:
+            lastsample = False
+
         # uRAD.detection(0, velocity, snr, iarr, qarr, movement)
-        # if movement[0]==True:
         uRAD.detection(0, 0, 0, iarr, qarr, movement)
         velocity = vel.velocity(iarr, qarr)
 
         if len(velocity):
             # v or print("{}: velocity: {: 3.2f}, snr: {: 3.2f}"
             #      .format(i, velocity[0], snr[0]))
-            if args.duration:
+            if args.duration and lastsample:
                 videocapture(duration, 1)
             if args.send:
                 # Collect data
