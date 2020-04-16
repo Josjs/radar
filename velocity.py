@@ -1,37 +1,52 @@
 from scipy import signal
 import numpy as np
 
+# constants:
+c  = 299792458
+f0 = 24.10e9                # carrier frequency
+Fs = 25000                  # sampling frequency
+fftsize = 2048              # upscale fft for higher resolution
+max_vel = 20                # filter out higher speeds
+v0 = (c * Fs/2) / (2 * f0)  # higest velocity
+# peak detection
+# TODO: tweak to perfection
+dist = 400
+prom = 4000
+
+# Make signal complex, filter and return fft
+def transform(I_data, Q_data):
+    I_data = I_data - np.mean(I_data)
+    Q_data = Q_data - np.mean(Q_data)
+    complex_sig = I_data + (1j * Q_data)
+
+    return np.abs(np.fft.fftshift(np.fft.fft(complex_sig, fftsize)))
+
+# Return
 def velocity(I_data, Q_data):
     """
     Calculates velocities of a single sample.
 
     Passed in parameters are I_data and Q_data
-    arrays, samplesize is 200.
+    Passed in parameters are I_data and Q_data
 
     Return parameter:
     :: velocities :: list :: contains velocities registered in sample
     """
 
-    c = 299792458
-    f0 = 24.05e9
-    Fs = 25000 # sampling frequency
-    v0 = (c * Fs/2) / (2 * f0)
-    velocities = []
+    fft_sig = transform(I_data, Q_data)
 
-    I_data = I_data - np.mean(I_data)
-    Q_data = Q_data - np.mean(Q_data)
-    complex_sig = I_data + (1j * Q_data)
-    fft_sig = abs(np.fft.fftshift(np.fft.fft(complex_sig, 2048)))
-    fd_list = signal.find_peaks(fft_sig, distance = 400, prominence = 4000)[0]
-    v_convert = np.linspace(-v0, v0, 2048)
+    fd_list = signal.find_peaks(fft_sig, distance = dist, prominence = prom)[0]
+    v_convert = np.linspace(-v0, v0, fftsize, endpoint = False)
+
+    velocities = []
     for sample in fd_list:
         velocity = v_convert[sample]
-        if velocity > 20:
+        if velocity > max_vel:
             continue
-        else: velocities.append(velocity)
+        else:
+            velocities.append(velocity)
 
     return velocities
-
 
 if __name__  == '__main__':
     """ Testcase data """
