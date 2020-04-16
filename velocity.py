@@ -1,7 +1,5 @@
-import matplotlib.pyplot as plt
 from scipy import signal
 import numpy as np
-import csv
 
 def velocity(I_data, Q_data):
     """
@@ -28,7 +26,7 @@ def velocity(I_data, Q_data):
     v_convert = np.linspace(-v0, v0, 2048)
     for sample in fd_list:
         velocity = v_convert[sample]
-        if velocity > 30:
+        if velocity > 20:
             continue
         else: velocities.append(velocity)
 
@@ -37,6 +35,8 @@ def velocity(I_data, Q_data):
 
 if __name__  == '__main__':
     """ Testcase data """
+    # import matplotlib.pyplot as plt
+    # import csv
     # no_velocity_I = []
     # no_velocity_Q = []
     # some_velocity_I = []
