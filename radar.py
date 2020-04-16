@@ -18,8 +18,9 @@ parser.add_argument("-v", "--verbose", action = "store_false", help =
 args = parser.parse_args()
 
 import cam
-import cputemp
+# import cputemp
 import datetime
+import humtemp
 import numpy as np
 import send
 import threading
@@ -132,9 +133,10 @@ def transmit(timeout):
         # send(turbine_id, end, start, birdmins, speed, temp, humid)
         end, start, bms, speed = birdmins(activity)     
         try:
+            humidity, temperature = humtemp.read()
             send.call_with_timeout(
                 send.send,
-                (args.turbine, end, start, bms, speed, cputemp.get(), 35),
+                (args.turbine, end, start, bms, speed, temperature, humidity),
                 timeout)
             print("Data transmission OK, {:5.2f} birdminutes.".format(bms))
         except:
