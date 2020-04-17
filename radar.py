@@ -119,11 +119,22 @@ def datawrite(path):
         #do nothing
         file.write("")
 
+# Handle user input while running
 def key_capture_thread():
     global keep_going
     while True:
-        if input() in ("quit", "exit"):
+        inp = input()
+        if str(inp).lower() in ("quit", "exit"):
+            print("Please wait until the last transmission goes through.")
             keep_going = False
+        elif str(inp).lower() in ("help"):
+            print("\nType 'quit' or 'exit' to exit cleanly, 'status'"
+                  " for current status, or 'help' to show this message.\n")
+        elif str(inp).lower() in ("status"):
+            print("\nTurbine-id: {}\nNumber of samples: {}"
+                  "\nLogging: {}\nVideo: {}\nSend data: {}\n"
+                  .format(args.turbine, args.points, args.log, args.duration,
+                          args.send))
 
 # Large function for handling data transmission
 def transmit(timeout):
