@@ -5,13 +5,15 @@ import numpy as np
 c  = 299792458
 f0 = 24.10e9                # carrier frequency
 Fs = 25000                  # sampling frequency
-fftsize = 2048              # upscale fft for higher resolution
+fftsize = 1024              # upscale fft for higher resolution
 max_vel = 20                # filter out higher speeds
-v0 = (c * Fs/2) / (2 * f0)  # higest velocity
+v0 = (c * Fs/2) / (2 * f0)  # highest velocity
 # peak detection
 # TODO: tweak to perfection
-dist = 400
-prom = 4000
+dist = 0.01 * fftsize
+prom = 900
+thresh = 80
+max_mean = 500
 
 # Make signal complex, filter and return fft
 def transform(I_data, Q_data):
@@ -21,7 +23,42 @@ def transform(I_data, Q_data):
 
     return np.abs(np.fft.fftshift(np.fft.fft(complex_sig, fftsize)))
 
-# Return
+def jtransform(ivalues, qvalues):
+    ikonst = (np.mean(ivalues))
+    qkonst = (np.mean(qvalues))
+    ivalues = np.hamming(len(ivalues)) * np.add(ivalues, - ikonst)
+    qvalues = np.hamming(len(qvalues)) * np.add(qvalues, - qkonst)
+    # Remove the remaining DC after applying hamming window
+    ikonst = (np.mean(ivalues))
+    qkonst = (np.mean(qvalues))
+    ivalues = np.add(ivalues, - ikonst)
+    qvalues = np.add(qvalues, - qkonst)
+    qvalues = np.multiply(1j, qvalues)
+
+    return np.abs(np.fft.fftshift(np.fft.fft(np.add(ivalues, qvalues), fftsize)))
+
+def ftovel(fft_sig):
+    fd_list = signal.find_peaks(fft_sig, distance = dist, prominence = prom, wlen = 0.03 * fftsize)[0]
+    # fd_list = signal.find_peaks(fft_sig, distance = dist, threshold = thresh)[0]
+    v_convert = np.linspace(-v0, v0, fftsize, endpoint = False)
+
+    velocities = []
+    # if len(fd_list) > max_targets:
+    #     print(len(fd_list))
+    #     return velocities
+    # print(np.mean(fft_sig))
+    if np.mean(fft_sig) > max_mean:
+        return velocities
+
+    for sample in fd_list:
+        velocity = v_convert[sample]
+        if abs(velocity) > max_vel:
+            continue
+        else:
+            velocities.append(velocity)
+
+    return velocities
+
 def velocity(I_data, Q_data):
     """
     Calculates velocities of a single sample.
@@ -32,21 +69,7 @@ def velocity(I_data, Q_data):
     Return parameter:
     :: velocities :: list :: contains velocities registered in sample
     """
-
-    fft_sig = transform(I_data, Q_data)
-
-    fd_list = signal.find_peaks(fft_sig, distance = dist, prominence = prom)[0]
-    v_convert = np.linspace(-v0, v0, fftsize, endpoint = False)
-
-    velocities = []
-    for sample in fd_list:
-        velocity = v_convert[sample]
-        if velocity > max_vel:
-            continue
-        else:
-            velocities.append(velocity)
-
-    return velocities
+    return ftovel(jtransform(I_data, Q_data))
 
 if __name__  == '__main__':
     """ Testcase data """
